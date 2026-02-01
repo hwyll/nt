@@ -1,0 +1,188 @@
+# note v3 configuration file
+# Copy to: ~/.config/note/note.conf
+
+# ===== General Settings =====
+NOTES_DIR=~/notes
+EDITOR=vim
+
+# ===== Display Options =====
+COLORS_ENABLED=true         # Disable all colors
+
+# ===== Border Style =====
+BORDER_CHAR='━'             # Border character
+BORDER_WIDTH=0              # Width (0=none, 3=minimal, 60=full)
+
+# Box drawing:
+# BORDER_CHAR='━'           # Heavy horizontal (default)
+# BORDER_CHAR='─'           # Light horizontal
+# BORDER_CHAR='═'           # Double
+# BORDER_CHAR='╌'           # Dashed
+# BORDER_CHAR='┄'           # Triple dash
+# BORDER_CHAR='╍'           # Heavy dashed
+
+# Blocks:
+# BORDER_CHAR='▀'           # Upper half block
+# BORDER_CHAR='▄'           # Lower half block
+# BORDER_CHAR='▔'           # Upper eighth
+# BORDER_CHAR='▁'           # Lower eighth
+
+# Decorative:
+# BORDER_CHAR='·'           # Middle dot (try width=20)
+# BORDER_CHAR='•'           # Bullet
+
+# ASCII (most compatible):
+# BORDER_CHAR='-'           # Dash
+# BORDER_CHAR='='           # Equals
+# BORDER_CHAR='~'           # Tilde
+
+# ===== Behavior =====
+CONFIRM_DELETE=true         # Prompt before delete
+
+# ===== ANSI Color Codes =====
+# Format: \033[CODEm where CODE is:
+#   0=reset, 1=bold, 2=dim, 3=italic, 4=underline
+#   30-37=foreground, 90-97=bright foreground
+#   Colors: 0=black, 1=red, 2=green, 3=yellow, 4=blue, 5=magenta, 6=cyan, 7=white
+
+# ----- Default Theme -----
+COLOR_TIMESTAMP='\033[35m'  # Magenta
+COLOR_TITLE='\033[0m'       # Default
+COLOR_TAG='\033[33m'        # Yellow
+COLOR_CONTENT='\033[37m'    # White
+COLOR_LABEL='\033[2;37m'    # Dim white
+COLOR_BORDER='\033[2;37m'   # Dim white
+COLOR_DIVIDER='\033[2;37m'  # Dim white
+COLOR_BRANCH='\033[2;37m'   # Dim white
+COLOR_META='\033[2;37m'     # Dim white
+
+# ----- Ocean Theme -----
+# COLOR_TIMESTAMP='\033[36m'   # Cyan
+# COLOR_TITLE='\033[1;37m'     # Bold white
+# COLOR_TAG='\033[96m'         # Bright cyan
+# COLOR_CONTENT='\033[37m'     # White
+# COLOR_LABEL='\033[34m'       # Blue
+# COLOR_BORDER='\033[2;34m'    # Dim blue
+# COLOR_DIVIDER='\033[2;34m'   # Dim blue
+# COLOR_BRANCH='\033[34m'      # Blue
+# COLOR_META='\033[2;36m'      # Dim cyan
+
+# ----- Forest Theme -----
+# COLOR_TIMESTAMP='\033[32m'   # Green
+# COLOR_TITLE='\033[1;37m'     # Bold white
+# COLOR_TAG='\033[33m'         # Yellow
+# COLOR_CONTENT='\033[37m'     # White
+# COLOR_LABEL='\033[2;32m'     # Dim green
+# COLOR_BORDER='\033[2;33m'    # Dim yellow
+# COLOR_DIVIDER='\033[2;33m'   # Dim yellow
+# COLOR_BRANCH='\033[32m'      # Green
+# COLOR_META='\033[2;37m'      # Dim white
+
+# ----- Minimal Theme -----
+# COLOR_TIMESTAMP='\033[2;37m' # Dim white
+# COLOR_TITLE='\033[1;37m'     # Bold white
+# COLOR_TAG='\033[37m'         # White
+# COLOR_CONTENT='\033[37m'     # White
+# COLOR_LABEL='\033[2;37m'     # Dim white
+# COLOR_BORDER='\033[2;37m'    # Dim white
+# COLOR_DIVIDER='\033[2;37m'   # Dim white
+# COLOR_BRANCH='\033[2;37m'    # Dim white
+# COLOR_META='\033[2;37m'      # Dim white
+
+# ----- Sunset Theme -----
+# COLOR_TIMESTAMP='\033[91m'   # Bright red
+# COLOR_TITLE='\033[93m'       # Bright yellow
+# COLOR_TAG='\033[33m'         # Yellow
+# COLOR_CONTENT='\033[37m'     # White
+# COLOR_LABEL='\033[35m'       # Magenta
+# COLOR_BORDER='\033[2;31m'    # Dim red
+# COLOR_DIVIDER='\033[2;31m'   # Dim red
+# COLOR_BRANCH='\033[31m'      # Red
+# COLOR_META='\033[2;33m'      # Dim yellow
+
+# ----- Dracula Theme -----
+# COLOR_TIMESTAMP='\033[35m'   # Purple
+# COLOR_TITLE='\033[1;37m'     # Bold white
+# COLOR_TAG='\033[36m'         # Cyan
+# COLOR_CONTENT='\033[37m'     # White
+# COLOR_LABEL='\033[95m'       # Bright magenta
+# COLOR_BORDER='\033[2;35m'    # Dim purple
+# COLOR_DIVIDER='\033[2;35m'   # Dim purple
+# COLOR_BRANCH='\033[35m'      # Purple
+# COLOR_META='\033[2;37m'      # Dim white
+
+# ----- Nord Theme -----
+# COLOR_TIMESTAMP='\033[36m'   # Cyan
+# COLOR_TITLE='\033[1;37m'     # Bold white
+# COLOR_TAG='\033[96m'         # Bright cyan
+# COLOR_CONTENT='\033[37m'     # White
+# COLOR_LABEL='\033[34m'       # Blue
+# COLOR_BORDER='\033[2;36m'    # Dim cyan
+# COLOR_DIVIDER='\033[2;36m'   # Dim cyan
+# COLOR_BRANCH='\033[36m'      # Cyan
+# COLOR_META='\033[2;34m'      # Dim blue
+
+# ----- Solarized Theme -----
+# COLOR_TIMESTAMP='\033[33m'   # Yellow
+# COLOR_TITLE='\033[1;34m'     # Bold blue
+# COLOR_TAG='\033[36m'         # Cyan
+# COLOR_CONTENT='\033[37m'     # White
+# COLOR_LABEL='\033[32m'       # Green
+# COLOR_BORDER='\033[2;36m'    # Dim cyan
+# COLOR_DIVIDER='\033[2;36m'   # Dim cyan
+# COLOR_BRANCH='\033[36m'      # Cyan
+# COLOR_META='\033[2;33m'      # Dim yellow
+
+# ----- Gruvbox Theme -----
+# COLOR_TIMESTAMP='\033[33m'   # Yellow
+# COLOR_TITLE='\033[1;37m'     # Bold white
+# COLOR_TAG='\033[91m'         # Bright red
+# COLOR_CONTENT='\033[37m'     # White
+# COLOR_LABEL='\033[32m'       # Green
+# COLOR_BORDER='\033[2;33m'    # Dim yellow
+# COLOR_DIVIDER='\033[2;33m'   # Dim yellow
+# COLOR_BRANCH='\033[33m'      # Yellow
+# COLOR_META='\033[2;37m'      # Dim white
+
+# ----- Monokai Theme -----
+# COLOR_TIMESTAMP='\033[35m'   # Magenta
+# COLOR_TITLE='\033[93m'       # Bright yellow
+# COLOR_TAG='\033[92m'         # Bright green
+# COLOR_CONTENT='\033[37m'     # White
+# COLOR_LABEL='\033[96m'       # Bright cyan
+# COLOR_BORDER='\033[2;35m'    # Dim magenta
+# COLOR_DIVIDER='\033[2;35m'   # Dim magenta
+# COLOR_BRANCH='\033[35m'      # Magenta
+# COLOR_META='\033[2;37m'      # Dim white
+
+# ----- Tokyo Night Theme -----
+# COLOR_TIMESTAMP='\033[35m'   # Magenta
+# COLOR_TITLE='\033[1;37m'     # Bold white
+# COLOR_TAG='\033[96m'         # Bright cyan
+# COLOR_CONTENT='\033[37m'     # White
+# COLOR_LABEL='\033[34m'       # Blue
+# COLOR_BORDER='\033[2;34m'    # Dim blue
+# COLOR_DIVIDER='\033[2;34m'   # Dim blue
+# COLOR_BRANCH='\033[95m'      # Bright magenta
+# COLOR_META='\033[2;35m'      # Dim magenta
+
+# ----- Catppuccin Theme -----
+# COLOR_TIMESTAMP='\033[95m'   # Bright magenta (mauve)
+# COLOR_TITLE='\033[1;37m'     # Bold white
+# COLOR_TAG='\033[94m'         # Bright blue
+# COLOR_CONTENT='\033[37m'     # White
+# COLOR_LABEL='\033[96m'       # Bright cyan (teal)
+# COLOR_BORDER='\033[2;95m'    # Dim bright magenta
+# COLOR_DIVIDER='\033[2;95m'   # Dim bright magenta
+# COLOR_BRANCH='\033[95m'      # Bright magenta
+# COLOR_META='\033[2;37m'      # Dim white
+
+# ----- One Dark Theme -----
+# COLOR_TIMESTAMP='\033[35m'   # Magenta
+# COLOR_TITLE='\033[1;37m'     # Bold white
+# COLOR_TAG='\033[33m'         # Yellow
+# COLOR_CONTENT='\033[37m'     # White
+# COLOR_LABEL='\033[34m'       # Blue
+# COLOR_BORDER='\033[2;37m'    # Dim white
+# COLOR_DIVIDER='\033[2;37m'   # Dim white
+# COLOR_BRANCH='\033[36m'      # Cyan
+# COLOR_META='\033[2;37m'      # Dim white

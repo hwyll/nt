@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+
+# Preview wrapper for fzf - avoids shell escaping issues
+# Usage: note-preview <note_id>
+
+# Get the directory this script is in
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+LIB_DIR="$(dirname "$SCRIPT_DIR")/lib"
+
+source "$LIB_DIR/config.sh"
+source "$LIB_DIR/utils.sh"
+source "$LIB_DIR/parser.sh"
+source "$LIB_DIR/display.sh"
+
+load_config
+FORCE_COLOR=true
+
+format_note_detail "$1"
