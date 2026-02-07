@@ -37,7 +37,7 @@ main() {
   
   # Parse flags
   local mode="note" tags="" format="plain" filter_tag="" since="" target=""
-  local today=false
+  local today=false multi=false
   local args=()
   
   while [[ $# -gt 0 ]]; do
@@ -50,6 +50,7 @@ main() {
       # List / Query
       --tags) mode="tags"; shift ;;
       -l|--list) mode="list"; shift ;;
+      -m|--multi) mode="pick"; shift ;;
       -s|--search) [ -z "$2" ] && error "-s requires search term" && exit 1; mode="search"; target="$2"; shift 2 ;;
       --today) today=true; shift ;;
       --since) [ -z "$2" ] && error "--since requires date" && exit 1; since="$2"; shift 2 ;;
@@ -66,8 +67,8 @@ main() {
         fi ;;
       
       # Operations
-      -c|--comment) [ -z "$2" ] && error "-c requires note ID" && exit 1; mode="comment"; target="$2"; shift 2 ;;
-      -g|--retag) [ -z "$2" ] && error "-g requires note ID" && exit 1; mode="tag"; target="$2"; shift 2 ;;
+      -c|--comment) [ -z "$2" ] && error "-c requires note ID" && exit 1; mode="comment"; target="$2"; shift 2; args+=("$@"); break ;;
+      -g|--retag) [ -z "$2" ] && error "-g requires note ID" && exit 1; mode="tag"; target="$2"; shift 2; args+=("$@"); break ;;
       -d|--delete) [ -z "$2" ] && error "-d requires note ID" && exit 1; mode="delete"; target="$2"; shift 2 ;;
       -x|--export) mode="export"; shift ;;
       
@@ -82,14 +83,21 @@ main() {
     note)
       [[ ${#args[@]} -eq 0 || -z "${args[*]// }" ]] && error "Note content required" && exit 1
       local note_id=$(create_note "${args[*]}" "$tags" "")
-      output "Note created: $note_id" ;;
+      $NOTE_QUIET && echo "$note_id" || echo "Note created: $note_id" ;;
     editor)
       local note_id=$(create_note_with_editor "${args[*]}" "$tags")
-      output "Note created: $note_id" ;;
+      $NOTE_QUIET && echo "$note_id" || echo "Note created: $note_id" ;;
     list)
       [ ${#args[@]} -gt 0 ] && error "Unexpected argument: ${args[0]} (use --since for date filters)" && exit 1
-      $today && since="$(date +%Y-%m-%d)"
+      if $today; then
+        [ "$DISPLAY_TIMEZONE" = "utc" ] && since="$(date -u +%Y-%m-%d)" || since="$(date +%Y-%m-%d)"
+      fi
       cmd_list --format "$format" ${filter_tag:+--tag "$filter_tag"} ${since:+--since "$since"} ;;
+    pick)
+      if $today; then
+        [ "$DISPLAY_TIMEZONE" = "utc" ] && since="$(date -u +%Y-%m-%d)" || since="$(date +%Y-%m-%d)"
+      fi
+      FORCE_COLOR=true interactive_pick ${filter_tag:+--tag "$filter_tag"} ${since:+--since "$since"} ;;
     tags)
       [ ${#args[@]} -gt 0 ] && error "Unexpected argument: ${args[0]}" && exit 1
       cmd_tags ;;
@@ -120,7 +128,7 @@ USAGE:
   note [OPTIONS] [TEXT]
 
 CAPTURE:
-  note buy potato                Quick note
+  note potato bear                Quick note
   note -t work,urgent task       Note with tags
   note -e                        New note in editor
   note -e latest                 Edit existing note
@@ -132,7 +140,7 @@ LIST / SEARCH:
   note -l --tag work             Filter by tag
   note -l --since 2026-01-01     Filter by date
   note -l --since yesterday      Relative dates work too
-  note -l -f json                Output format (json|csv|md|plain)
+  note -l -f json                Output format (json|csv|md|ids|plain)
   note -s "term"                 Search notes
   note --tags                    List all tags
 
@@ -150,12 +158,13 @@ OPTIONS:
   -t TAGS              Tags for new note (comma-separated)
   -e [ID]              Edit note (or new in editor if no ID)
   -l, --list           List notes
+  -m, --multi          Multi-select picker (outputs IDs)
   -s, --search TERM    Search notes
   -c, --comment ID     Add comment to note
   -g, --retag ID       Modify note tags
   -d, --delete ID      Delete note
   -x, --export         Export notes
-  -f, --format FMT     Output format
+  -f, --format FMT     Output format (json|csv|md|ids|plain)
   -q, --quiet          Suppress output messages
   -y, --yes            Skip confirmation prompts
   --tags               List all tags
@@ -166,8 +175,7 @@ OPTIONS:
   -v, --version        Version
 
 NOTE IDS:
-  Full:      20260203143052
-  Time only: 143052 (today)
+  Full:      1770443892
   Relative:  latest, oldest, -1, -2
 
 ESCAPING:

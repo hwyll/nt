@@ -28,26 +28,27 @@ cmd_list() {
   # Apply tag filter
   [ -n "$tag_filter" ] && notes=$(echo "$notes" | grep "#$tag_filter")
   
-  # Apply date filter (compare first 8 digits of ID = YYYYMMDD)
+  # Apply date filter (compare epoch IDs)
+  # Use local or UTC based on DISPLAY_TIMEZONE setting
   if [ -n "$since" ]; then
-    local since_date=""
+    local since_epoch=""
+    local date_flag=""
+    [ "$DISPLAY_TIMEZONE" = "utc" ] && date_flag="-u"
     
-    # Try YYYY-MM-DD format first
-    since_date=$(date -j -f "%Y-%m-%d" "$since" "+%Y%m%d" 2>/dev/null) || \
-    # Try GNU date relative format (Linux)
-    since_date=$(date -d "$since" "+%Y%m%d" 2>/dev/null) || \
-    since_date=""
+    # Try YYYY-MM-DD format first (convert to midnight in display timezone)
+    since_epoch=$(date -j $date_flag -f "%Y-%m-%d %H:%M:%S" "$since 00:00:00" "+%s" 2>/dev/null) || \
+    since_epoch=""
     
     # Handle relative dates on macOS (yesterday, last week, etc.)
-    if [ -z "$since_date" ]; then
+    if [ -z "$since_epoch" ]; then
       case "$since" in
-        yesterday) since_date=$(date -v-1d "+%Y%m%d") ;;
-        "last week"|"last-week") since_date=$(date -v-7d "+%Y%m%d") ;;
+        yesterday) since_epoch=$(date $date_flag -v-1d -v0H -v0M -v0S "+%s") ;;
+        "last week"|"last-week") since_epoch=$(date $date_flag -v-7d -v0H -v0M -v0S "+%s") ;;
         *) error "Invalid date: $since (use YYYY-MM-DD, yesterday, or 'last week')"; return 1 ;;
       esac
     fi
     
-    notes=$(echo "$notes" | awk -F'\t' -v date="$since_date" 'substr($1,1,8) >= date')
+    notes=$(echo "$notes" | awk -F'\t' -v epoch="$since_epoch" '$1 >= epoch')
   fi
   
   # Format output
@@ -55,6 +56,7 @@ cmd_list() {
     json) echo "$notes" | format_as_json ;;
     csv) echo "$notes" | format_as_csv ;;
     markdown|md) echo "$notes" | format_as_markdown ;;
+    ids) echo "$notes" | format_as_ids ;;
     *) echo "$notes" | format_as_plain ;;
   esac
 }
@@ -117,13 +119,14 @@ cmd_tag() {
     local tag
     
     # Process +tags (add)
-    for tag in $(echo "$tag_spec" | grep -oE "(^|[[:space:]])\+[$TAG_CHARS]+" | tr -d ' +'); do
+    for tag in $(echo "$tag_spec" | grep -oE "(^|[[:space:]])\+[$TAG_CHARS]+" | sed 's/^[[:space:]]*+//'); do
       [[ "$new_tags" != *"#$tag"* ]] && new_tags="$new_tags #$tag"
     done
     
     # Process -tags (remove)
-    for tag in $(echo "$tag_spec" | grep -oE "(^|[[:space:]])-[$TAG_CHARS]+" | tr -d ' -'); do
-      new_tags=$(echo "$new_tags" | sed "s/#$tag//g")
+    for tag in $(echo "$tag_spec" | grep -oE "(^|[[:space:]])-[$TAG_CHARS]+" | sed 's/^[[:space:]]*-//'); do
+      local escaped_tag=$(echo "$tag" | sed 's/\./\\./g')
+      new_tags=$(echo "$new_tags" | sed -E "s/#$escaped_tag( |$)/ /g")
     done
     
     # Clean up whitespace and convert to comma-separated for format_tags_line

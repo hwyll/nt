@@ -45,8 +45,9 @@ format_note_detail() {
   # Header separator
   print_separator
 
-  # Title with timestamp
-  printf "%s %s\n" "$(colorize "$COLOR_TIMESTAMP" "[$time]")" "$(colorize "$COLOR_TITLE" "$title")"
+  # Title with timestamp (same format as list view)
+  local display_time=$(format_list_timestamp "$id" "$time")
+  printf "%s %s\n" "$(colorize "$COLOR_TIMESTAMP" "[$display_time]")" "$(colorize "$COLOR_TITLE" "$title")"
 
   # Header separator
   print_separator
@@ -72,9 +73,15 @@ format_note_detail() {
   if [ -n "$comments" ]; then
     printf "%s\n" "$(colorize "$COLOR_LABEL" "Comments:")"
     echo "$comments" | while IFS='|' read -r comment_time comment_text; do
-      printf "  %s %s\n" \
-        "$(colorize "$COLOR_BRANCH" "└─") $(colorize "$COLOR_TIMESTAMP" "[$comment_time]")" \
-        "$(colorize "$COLOR_CONTENT" "$comment_text")"
+      # Convert UTC timestamp to epoch seconds, then format like list view
+      if [[ "$comment_time" =~ ^(.+)Z$ ]]; then
+        local time_sec="${BASH_REMATCH[1]}"
+        local comment_epoch=$(date -j -u -f "%Y-%m-%d %H:%M:%S" "$time_sec" "+%s" 2>/dev/null)
+        local display_comment_time=$(format_list_timestamp "$comment_epoch" "")
+        printf "  %s %s\n" \
+          "$(colorize "$COLOR_BRANCH" "└─") $(colorize "$COLOR_TIMESTAMP" "[$display_comment_time]")" \
+          "$(colorize "$COLOR_CONTENT" "$comment_text")"
+      fi
     done
     echo ""
   fi
@@ -182,4 +189,51 @@ interactive_find() {
       --query="$query" \
       --preview="echo {} | cut -f1 | xargs $BIN_DIR/note-preview" \
       --preview-window=down:60%
+}
+
+# Interactive multi-select picker - outputs IDs
+interactive_pick() {
+  local tag_filter="" since=""
+  
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --tag) tag_filter="$2"; shift 2 ;;
+      --since) since="$2"; shift 2 ;;
+      *) shift ;;
+    esac
+  done
+
+  check_dependencies || return 1
+
+  local notes=$(parse_all_notes)
+  
+  # Apply filters
+  [ -n "$tag_filter" ] && notes=$(echo "$notes" | grep "#$tag_filter")
+  if [ -n "$since" ]; then
+    local since_epoch=""
+    local date_flag=""
+    [ "$DISPLAY_TIMEZONE" = "utc" ] && date_flag="-u"
+    since_epoch=$(date -j $date_flag -f "%Y-%m-%d %H:%M:%S" "$since 00:00:00" "+%s" 2>/dev/null) || since_epoch=""
+    if [ -z "$since_epoch" ]; then
+      case "$since" in
+        yesterday) since_epoch=$(date $date_flag -v-1d -v0H -v0M -v0S "+%s") ;;
+        "last week"|"last-week") since_epoch=$(date $date_flag -v-7d -v0H -v0M -v0S "+%s") ;;
+      esac
+    fi
+    [ -n "$since_epoch" ] && notes=$(echo "$notes" | awk -F'\t' -v epoch="$since_epoch" '$1 >= epoch')
+  fi
+
+  [ -z "$notes" ] && echo "No notes found" >&2 && return 1
+
+  echo "$notes" | format_for_fzf_list | tail -r |
+    fzf --ansi \
+      --multi \
+      --delimiter=$'\t' \
+      --with-nth=2.. \
+      --height=100% \
+      --reverse \
+      --header="Tab to select, Enter to confirm" \
+      --preview="echo {} | cut -f1 | xargs $BIN_DIR/note-preview" \
+      --preview-window=down:60% |
+    cut -f1
 }

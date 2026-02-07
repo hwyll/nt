@@ -6,7 +6,7 @@ NOTES_DIR=~/notes
 EDITOR=vim
 
 # ===== Display Options =====
-COLORS_ENABLED=true         # Disable all colors
+COLORS_ENABLED=true         # Enable colors (set false to disable)
 
 # ===== Border Style =====
 BORDER_CHAR='━'             # Border character
@@ -37,6 +37,7 @@ BORDER_WIDTH=0              # Width (0=none, 3=minimal, 60=full)
 
 # ===== Behavior =====
 CONFIRM_DELETE=true         # Prompt before delete
+DISPLAY_TIMEZONE=local      # Display times in: local or utc
 
 # ===== ANSI Color Codes =====
 # Format: \033[CODEm where CODE is:

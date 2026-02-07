@@ -46,6 +46,7 @@ load_config() {
   EDITOR="${EDITOR:-vim}"
   COLORS_ENABLED="${COLORS_ENABLED:-true}"
   CONFIRM_DELETE="${CONFIRM_DELETE:-true}"
+  DISPLAY_TIMEZONE="${DISPLAY_TIMEZONE:-local}"  # local or utc
   COLOR_TIMESTAMP="${COLOR_TIMESTAMP:-$'\033[35m'}"
   COLOR_TITLE="${COLOR_TITLE:-$'\033[0m'}"
   COLOR_TAG="${COLOR_TAG:-$'\033[33m'}"
@@ -68,17 +69,18 @@ get_notes_dir() {
 get_note_file() {
   local date="$1" # Format: YYYY-MM-DD
 
-  local year month
+  local year month day
   year=$(echo "$date" | cut -d- -f1)
   month=$(echo "$date" | cut -d- -f2)
+  day=$(echo "$date" | cut -d- -f3)
 
   local dir="$NOTES_DIR/$year/$month"
   mkdir -p "$dir"
 
-  echo "$dir/$date.md"
+  echo "$dir/$day.md"
 }
 
-# Get today's file
+# Get today's file (UTC)
 get_today_file() {
-  get_note_file "$(date +%Y-%m-%d)"
+  get_note_file "$(date -u +%Y-%m-%d)"
 }

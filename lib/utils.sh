@@ -21,22 +21,30 @@ check_dependencies() {
   return 0
 }
 
-# Format timestamp with date for list display
-# Input: note_id (YYYYMMDDHHMMSS), time (HH:MM:SS±ZZZZ)
+# Format timestamp with date for list display (converts to local or UTC based on config)
+# Input: note_id (epoch seconds), time (YYYY-MM-DD HH:MM:SSZ)
 format_list_timestamp() {
   local note_id="$1"
   local time="$2"
   
-  local year="${note_id:0:4}"
-  local month="${note_id:4:2}"
-  local day="${note_id:6:2}"
-  local hhmm=$(echo "$time" | cut -d: -f1-2)
-  local current_year=$(date +%Y)
+  local current_year date_flag
+  if [ "$DISPLAY_TIMEZONE" = "utc" ]; then
+    current_year=$(date -u +%Y)
+    date_flag="-u"
+  else
+    current_year=$(date +%Y)
+    date_flag=""
+  fi
+  
+  # note_id is epoch seconds
+  local local_time=$(date $date_flag -r "$note_id" "+%Y %m/%d %H:%M")
+  local year=$(echo "$local_time" | cut -d' ' -f1)
+  local rest=$(echo "$local_time" | cut -d' ' -f2-)
   
   if [ "$year" = "$current_year" ]; then
-    echo "$month/$day $hhmm"
+    echo "$rest"
   else
-    echo "$year/$month/$day $hhmm"
+    echo "$year/$rest"
   fi
 }
 
@@ -111,8 +119,8 @@ format_tags_line() {
     # Strip # prefix if present, then sanitize to allowed chars only
     tag="${tag#\#}"
     tag=$(echo "$tag" | grep -oE "[$TAG_CHARS]+" | head -1 | tr '[:upper:]' '[:lower:]')
-    # Skip empty or punctuation-only (must have at least one alphanumeric, stricter than TAG_CHARS)
-    [[ -z "$tag" || "$tag" =~ ^[^a-zA-Z0-9]+$ ]] && continue
+    # Must start with alphanumeric
+    [[ -z "$tag" || ! "$tag" =~ ^[a-zA-Z0-9] ]] && continue
     # Skip duplicates
     [[ " $seen " == *" $tag "* ]] && continue
     seen="$seen $tag"
@@ -121,9 +129,8 @@ format_tags_line() {
   echo "$line"
 }
 
-# Generate note ID from timestamp
-# Usage: generate_note_id "HH:MM:SS±ZZZZ"
+# Generate note ID from timestamp - alias for compute_note_id
+# Usage: generate_note_id "YYYY-MM-DD HH:MM:SS.mmmZ"
 generate_note_id() {
-  local time_digits=$(echo "$1" | grep -oE '[0-9]{2}:[0-9]{2}:[0-9]{2}' | tr -d ':')
-  echo "$(date +%Y%m%d)${time_digits}"
+  compute_note_id "" "$1"
 }

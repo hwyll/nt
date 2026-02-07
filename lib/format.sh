@@ -69,9 +69,8 @@ format_as_csv() {
     local tags=$(echo "$line" | cut -f6)
     local content=$(echo "$line" | cut -f7)
     
-    # Extract date from ID
-    local date="${id:0:8}"  # YYYYMMDD
-    local formatted_date="${date:0:4}-${date:4:2}-${date:6:2}"
+    # Extract date from ISO timestamp
+    local formatted_date=$(echo "$time" | grep -oE '^[0-9]{4}-[0-9]{2}-[0-9]{2}')
     
     # Unescape and clean content
     content=$(echo "$content" | tr '␤' ' ' | tr '␉' ' ' | sed 's/  */ /g')
@@ -136,5 +135,13 @@ format_as_plain() {
     local title=$(echo "$line" | cut -f5)
     local tags=$(echo "$line" | cut -f6)
     format_note_line "$id" "$time" "$title" "$tags"
+  done
+}
+
+# Output just note IDs (one per line)
+format_as_ids() {
+  while IFS= read -r line; do
+    [ -z "$line" ] && continue
+    echo "$line" | cut -f1
   done
 }

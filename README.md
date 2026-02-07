@@ -5,7 +5,7 @@ A fast, terminal-based note-taking CLI built on plain text markdown files.
 ## Features
 
 - **Plain text storage** - Human-readable markdown, organized by date
-- **Quick note** - `nt buy potato`
+- **Quick note** - `nt potato bear`
 - **Interactive browser** - fzf integration for browsing and searching
 - **Tags** - Flexible tagging with `#tag` syntax
 - **Comments** - Thread comments on notes
@@ -29,7 +29,7 @@ alias nt='note'
 
 ```bash
 # Capture notes (default action)
-nt buy potato
+nt potato bear
 nt today was productive
 nt -t work,urgent deploy the fix
 
@@ -58,7 +58,7 @@ nt -d <id>                # delete
 nt meeting went well           # quick note
 nt -t work standup notes       # with tags
 nt -e                          # open editor for multiline
-nt -e "meeting"                # editor with title pre-filled
+nt -e "meeting"                # editor with title filled
 ```
 
 ### List & Search
@@ -74,6 +74,7 @@ nt -l --since "last week"      # past 7 days
 nt -l -f json                  # output as JSON
 nt -l -f csv                   # output as CSV
 nt -l -f md                    # output as Markdown
+nt -l -f ids                   # output as IDs
 nt -s "search term"            # search with fzf
 nt --tags                      # list all tags with counts
 ```
@@ -92,14 +93,45 @@ nt -d <id>                     # delete note
 nt -y -d <id>                  # delete without confirm
 ```
 
-Tags can contain letters, numbers, dots, hyphens, and underscores (e.g., `work`, `v2.0`, `my-tag`). Tags are normalized to lowercase and deduplicated.
+Tags must start with a letter or number, and can contain letters, numbers, dots, hyphens, and underscores (e.g., `work`, `v2.0`, `my-tag`). Tags are normalized to lowercase and deduplicated.
 
 ### Scripting
 
 ```bash
-nt -q buy potato               # quiet mode (no output)
+id=$(nt -q potato bear)        # quiet mode (returns ID only)
 nt -q -y -d latest             # quiet + skip confirm
-nt -l -f json | jq ...         # pipe JSON to jq
+nt -l -f ids                   # list just IDs (one per line)
+nt -l -f json | jq ...         # pipe JSON for complex queries
+```
+
+**Interactive multi-select (`-m`):**
+
+```bash
+nt -m                          # pick notes with fzf (Tab to select)
+nt -m --tag work               # pick from filtered list
+nt -m --today                  # pick from today's notes
+
+# Bulk tag selected notes
+nt -m | while read id; do nt -g $id +archived; done
+
+# Comment on selected notes
+nt -m --tag work | while read id; do nt -c $id "reviewed"; done
+```
+
+**Bulk operations (non-interactive):**
+
+```bash
+# Add tag to all work notes
+nt -l -f ids --tag work | while read id; do nt -g $id +reviewed; done
+
+# Delete old notes
+nt -l -f ids --since 2024-01-01 | while read id; do nt -y -d $id; done
+
+# Add tag and comment
+nt -l -f ids --tag urgent | while read id; do
+  nt -g $id +processed
+  nt -c $id "Handled $(date +%Y-%m-%d)"
+done
 ```
 
 ### Export
@@ -112,11 +144,10 @@ nt -x --tag work               # export filtered
 
 ## Note IDs
 
-Every note has a timestamp-based ID: `YYYYMMDDHHMMSS`
+Every note has an epoch seconds ID (e.g., `1770443892`):
 
 ```bash
-nt -e 20260203143052           # full ID
-nt -e 143052                   # time only (today)
+nt -e 1770443892               # full epoch ID
 nt -e latest                   # most recent
 nt -e oldest                   # oldest note
 nt -e -1                       # alias for latest
@@ -126,7 +157,7 @@ nt -e -2                       # second to last
 ## Interactive Browser
 
 ```bash
-nt                             # open browser
+nt                             # open in browser
 
 # Keyboard shortcuts:
 # Ctrl-N    Create new note
@@ -146,33 +177,36 @@ Notes stored in `~/notes/` (or `$NOTES_DIR`):
 ~/notes/
   2026/
     02/
-      2026-02-03.md
+      07.md
 ```
 
-Each note:
+Note file:
 
 ```markdown
-## [14:30:52-0800] Meeting notes
+## [2026-02-07 05:30:52Z] Meeting notes
 
 tags: #work #standup
 
 Discussed the deployment timeline.
 
-> [14:35:00-0800] Action item added
-> [15:00:00-0800] Completed
+> [2026-02-07 05:35:00Z] Action item added
+> [2026-02-07 06:00:00Z] Completed
 
 ---
 ```
 
+Files use UTC, but notes can be displayed in local time (default) or utc.
+
 ## Configuration
 
-Create `~/.config/note/note.conf`:
+Create `~/.config/note/note.conf`: 
 
 ```bash
 NOTES_DIR=~/notes
 EDITOR=nvim
 CONFIRM_DELETE=true         # Prompt before delete
-COLORS_ENABLED=true         # Disable all colors
+DISPLAY_TIMEZONE=local      # Display times in: local or utc
+COLORS_ENABLED=true         # Enable colors (set false to disable)
 
 # Colors (ANSI escape codes)
 COLOR_TIMESTAMP='\033[35m'  # Magenta

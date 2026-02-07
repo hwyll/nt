@@ -4,10 +4,10 @@
 # Compatible with macOS (BSD sed/awk/grep)
 
 # Note data format: tab-separated fields
-# Field 1: id        - YYYYMMDDHHMMSS
+# Field 1: id        - epoch seconds
 # Field 2: file      - full path to .md file
 # Field 3: line      - line number of note header
-# Field 4: time      - HH:MM:SS±ZZZZ
+# Field 4: time      - YYYY-MM-DD HH:MM:SSZ (UTC)
 # Field 5: title     - note title text
 # Field 6: tags      - space-separated #tags (may be empty)
 # Field 7: content   - note body (␤ = newline, ␉ = tab)
@@ -37,8 +37,8 @@ parse_note_file() {
   while IFS= read -r line || [ -n "$line" ]; do
     ((line_num++))
     
-    # Check for note header: ## [HH:MM:SS±ZZZZ] Title
-    if [[ "$line" =~ ^##[[:space:]]\[([0-9]{2}:[0-9]{2}:[0-9]{2}[+-][0-9]{4})\][[:space:]](.*)$ ]]; then
+    # Check for note header: ## [YYYY-MM-DD HH:MM:SSZ] Title
+    if [[ "$line" =~ ^##[[:space:]]\[([0-9]{4}-[0-9]{2}-[0-9]{2}\ [0-9]{2}:[0-9]{2}:[0-9]{2})Z\][[:space:]](.*)$ ]]; then
       # Save previous note if exists
       if $in_note; then
         output_note "$file" "$note_id" "$header_line" "$note_time" "$note_title" "$note_tags" "$note_content" "$note_comments"
@@ -47,7 +47,7 @@ parse_note_file() {
       # Start new note
       in_note=true
       header_line=$line_num
-      note_time="${BASH_REMATCH[1]}"
+      note_time="${BASH_REMATCH[1]}Z"
       note_title="${BASH_REMATCH[2]}"
       note_tags=""
       note_content=""
@@ -58,9 +58,9 @@ parse_note_file() {
     elif $in_note && [[ "$line" =~ ^tags:[[:space:]]*(.*)$ ]]; then
       note_tags="${BASH_REMATCH[1]}"
       
-    # Check for comment: > [HH:MM:SS±ZZZZ] Comment text
-    elif $in_note && [[ "$line" =~ ^\>[[:space:]]\[([0-9]{2}:[0-9]{2}:[0-9]{2}[+-][0-9]{4})\][[:space:]](.*)$ ]]; then
-      local comment_time="${BASH_REMATCH[1]}"
+    # Check for comment: > [YYYY-MM-DD HH:MM:SSZ] Comment text
+    elif $in_note && [[ "$line" =~ ^\>[[:space:]]\[([0-9]{4}-[0-9]{2}-[0-9]{2}\ [0-9]{2}:[0-9]{2}:[0-9]{2})Z\][[:space:]](.*)$ ]]; then
+      local comment_time="${BASH_REMATCH[1]}Z"
       local comment_text="${BASH_REMATCH[2]}"
       note_comments="${note_comments}${comment_time}|${comment_text}
 "
@@ -107,32 +107,14 @@ output_note() {
 }
 
 # Compute note ID from file and time
-# Format: YYYYMMDDHHMMSS
+# Format: Unix epoch seconds
 compute_note_id() {
   local file="$1"
-  local time="$2"  # HH:MM:SS±ZZZZ
+  local time="$2"  # YYYY-MM-DD HH:MM:SSZ
   
-  # Extract date from filename (try multiple patterns)
-  local date=""
-  
-  # Pattern 1: YYYY-MM-DD.md
-  if [[ "$file" =~ ([0-9]{4})-([0-9]{2})-([0-9]{2})\.md ]]; then
-    date="${BASH_REMATCH[1]}${BASH_REMATCH[2]}${BASH_REMATCH[3]}"
-  
-  # Pattern 2: YYYY/MM/YYYY-MM-DD.md (with path)
-  elif [[ "$file" =~ /([0-9]{4})/([0-9]{2})/([0-9]{4})-([0-9]{2})-([0-9]{2})\.md ]]; then
-    date="${BASH_REMATCH[3]}${BASH_REMATCH[4]}${BASH_REMATCH[5]}"
-  
-  # Fallback: use file modification time
-  else
-    # macOS compatible stat
-    date=$(stat -f %Sm -t %Y%m%d "$file" 2>/dev/null || date +%Y%m%d)
-  fi
-  
-  # Extract time (remove colons and timezone)
-  local time_digits=$(echo "$time" | grep -oE '[0-9]{2}:[0-9]{2}:[0-9]{2}' | tr -d ':')
-  
-  echo "${date}${time_digits}"
+  # Strip Z suffix and convert to epoch
+  local time_sec="${time%Z}"
+  date -j -u -f "%Y-%m-%d %H:%M:%S" "$time_sec" "+%s" 2>/dev/null
 }
 
 # Parse all notes in directory (recursive)
@@ -167,23 +149,9 @@ resolve_note_id() {
   local input="$1"
   
   case "$input" in
-    # Full ID (14 digits)
-    [0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9])
+    # Full epoch seconds ID (10 digits)
+    [0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9])
       echo "$input"
-      return 0
-      ;;
-    
-    # Short form with n_ prefix
-    n_*)
-      echo "${input#n_}"
-      return 0
-      ;;
-    
-    # Time only (6 digits) - search in today's notes
-    [0-9][0-9][0-9][0-9][0-9][0-9])
-      local today=$(date +%Y%m%d)
-      local full_id="${today}${input}"
-      echo "$full_id"
       return 0
       ;;
     
@@ -204,15 +172,6 @@ resolve_note_id() {
       return 0
       ;;
     
-    # Date-time: MMDD-HHMMSS
-    [0-9][0-9][0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9])
-      local year=$(date +%Y)
-      local mmdd="${input%%-*}"
-      local hhmmss="${input##*-}"
-      echo "${year}${mmdd}${hhmmss}"
-      return 0
-      ;;
-    
     *)
       # Try to find by title match
       local result=""
@@ -229,7 +188,3 @@ resolve_note_id() {
       ;;
   esac
 }
-
-
-
-

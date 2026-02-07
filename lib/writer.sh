@@ -2,6 +2,13 @@
 
 # Writer for note - create and modify notes
 
+# Generate UTC timestamp
+# Sets: TIMESTAMP (string), NOTE_ID (epoch seconds)
+generate_timestamp() {
+  NOTE_ID=$(date -u +%s)
+  TIMESTAMP="$(date -u -r "$NOTE_ID" "+%Y-%m-%d %H:%M:%S")Z"
+}
+
 # Locate note by ID, sets NOTE_FILE and NOTE_LINE
 # Usage: locate_note "$note_id" || return 1
 locate_note() {
@@ -18,19 +25,14 @@ create_note() {
   local tags="$2"
   local content="$3"
   
-  # Get today's file
   local file=$(get_today_file)
-  local timestamp=$(date "+%H:%M:%S%z")
-  
-  # Format timezone: -0800 format
-  # macOS date already gives this format
-  
+  generate_timestamp
   local tags_line=$(format_tags_line "$tags")
   
   # Create note block
   {
     [ -s "$file" ] && echo ""  # separator if file has content
-    echo "## [$timestamp] $title"
+    echo "## [$TIMESTAMP] $title"
     echo ""
     echo "$tags_line"
     
@@ -43,7 +45,7 @@ create_note() {
     echo "---"
   } >> "$file"
   
-  echo "$(generate_note_id "$timestamp")"
+  echo "$NOTE_ID"
 }
 
 # Add comment to a note
@@ -53,9 +55,7 @@ add_comment_to_note() {
   local comment_text="$2"
   
   locate_note "$note_id" || return 1
-  
-  # Get current timestamp
-  local timestamp=$(date "+%H:%M:%S%z")
+  generate_timestamp
   
   local tmp=$(mktemp)
   local in_target_note=false
@@ -76,7 +76,7 @@ add_comment_to_note() {
     if $in_target_note && ! $comment_inserted; then
       if [[ "$file_line" =~ ^---$ ]] || [[ "$file_line" =~ ^##[[:space:]]\[ ]]; then
         # Insert comment before separator or next note
-        echo "> [$timestamp] $comment_text" >> "$tmp"
+        echo "> [$TIMESTAMP] $comment_text" >> "$tmp"
         comment_inserted=true
       fi
     fi
@@ -88,7 +88,7 @@ add_comment_to_note() {
   # If note was last in file without separator, append comment
   if $in_target_note && ! $comment_inserted; then
     echo "" >> "$tmp"
-    echo "> [$timestamp] $comment_text" >> "$tmp"
+    echo "> [$TIMESTAMP] $comment_text" >> "$tmp"
   fi
   
   # Replace original file
@@ -207,12 +207,12 @@ create_note_with_editor() {
   local tags="$2"
   
   local tmp=$(mktemp)
-  local timestamp=$(date "+%H:%M:%S%z")
+  generate_timestamp
   local tags_line=$(format_tags_line "$tags")
   
   # Create template
   cat > "$tmp" << EOF
-## [$timestamp] ${title}
+## [$TIMESTAMP] ${title}
 
 $tags_line
 
@@ -238,5 +238,5 @@ EOF
   
   rm -f "$tmp"
   
-  echo "$(generate_note_id "$timestamp")"
+  echo "$NOTE_ID"
 }
